@@ -1,0 +1,52 @@
+Here follows a description for every important class or namespace that makes up the program, consult the README.txt
+file for a guide to the user interface.
+
+-------------BOX-------------
+A Box is an entity that is made out of a pair of coordinates, a color, and a set of neighbors (pointers to other Boxes) which dipend on the distance we'll want our 
+Person objects to consider while examining the ethnicities of the other people. A Box can't manage its own members, neighbors are controlled by the Neighborhood 
+class and color by the Person class thanks to friend member functions, a Box can only provide to the user its color and its neighbors's colors. If there isn't any 
+person in the box, the color is blank: ' ' otherwise the color will be equal to the ethnicity of the occupant of the box. A Box itself is an abstract object, the 
+boxes have all the nine possible value of walls in a 2D grid, so there can be a top-left wall, a top wall, no wall etc... This is because boxes also provide members 
+to determine if it is possible to move on a certain direction from them without impacting on a wall, this feature is used in the Grid_movement class.
+
+-------------GRID------------
+The Grid is a namespace, so it's just a collection of variables and methods. It holds the whole array of boxes as well as 7 vectors (one for each value of R, range
+of vision) containing the set of R-order neighbors for each box. The proper neighbors for each box are found at run-time thanks to the move_through_grid function, 
+that is the only function able to instanciate a Grid_movement object (a walker on the grid). The idea of making the Grid a namespace instead of a class is that in 
+the paper I studied the grid were always 50x50 and there were no reason for providing the user a way to dinamically choose the size of the grid. But if all the grids
+are the same then all the variables should be static, hence there's no meaning in the instanciation of a Grid. So the Grid class should be turned into a namespace.
+
+-------------GRID_MOVEMENT---
+The Grid_movement class is invisible to the user interface. Like we said early it can be instanciated only by the friend function defined in the Grid namespace.
+A Grid_movement object is basically a walker, characterized by a start position (a pointer to a Box) and a distance (the max distance from its start point it will
+walk). The function that actually makes the walker move is move_through_all, but the core of the class is the try_movement function. A look at the code will convince
+you that the walker is highly optimized, it will never step two times on a Box it already visited and it will go as further as an extra Box in each direction before
+stopping. This process also saves the visited houses that are within the max distance in a convenient set called visited_houses.
+
+-------------ETHNICITY-------
+The Ethnicity class has been created to make the model more dinamic, it has a static data member that is the set of the possible ethnicities that a person can be.
+This set can be modified through some public static data members, even at run time. The actual char rapresenting the ethnicity is picked randomly at run-time from
+the set at every instantiation of a Person object (unless differently specified). The user can modify the static set of ethnicities with the static members
+add_ethnicity and remove_ethnicity, add_ethnicity also requires to provide a color code for the visualization, use "32" and "33" for yellow and green.
+
+-------------PERSON----------
+The Person is the agent of the model, its decisionary process is to look at its neighbors's colors and if the ones different from its own are too many it decides
+to move house. This is done because a Person holds an Ethnicity, whenever it resides in a certain Box it colors it with its own color, when it leaves from a house, 
+it leave a blank Box behind itself. To decide whether to move or not, it has a boolean happiness member, when it is 0, the person must move. The whole decisionary 
+process is managed by the Neighborhood class.
+
+-------------NEIGHBORHOOD----
+The Neighborhood class manages the evolution of the simulation. It is also the only class that should deal with the variables in the Grid namespace through some
+functions defined in an anonymous namespace (look inside mynamespace.h) included in the Neighborhood class (and therefore accessible only by it). When a Neighborhood
+is instanciated for the first time it also creates the whole Grid, this mean all the 2500 (50x50) proper boxes and all the 7 vectors of neighbors. When the last
+instance of a Neighborhood is deleted, also the Grid gets deleted. Neighborhood has a static data member that controls the number of instances currently active
+in the program. The Grid is only one, so there's just one set of boxes in the program but we can deal with more than one Neighborhood at the same time. When we
+instanciate a Neighborhood a set of 2250 (50x50x0.9) Person objects is created and each one is given a home, we'll remember that each Person colors the Box in
+which he resides according to its Ethnicity and the color of the other boxes is all he needs to evaluate to decide if its happy or not and where to move. So,
+everytime more than one instance of a Neighborhood is active in the program, whenever we call the decisionary process (the Iterate function), the program must
+make sure that the boxes are colored according to the Person living in the Neighborhood we're currently dealing with, by recoloring all the houses. It's slightly
+more efficient to write code having always only one instance of Neighborhood at a time (the launch_macro function is optimized this way) but it works very well
+nonetheless with as many instances of Neighborhood as you wish. One instantiation of Neighborhood requires only two parameters, a range of vision and a tolerance
+of the agents (the density is set with an in-class initializer and can only be changed by directly modifying the code). This class also provides a method to 
+visualize the Neighborhood at any point of the evolution, with the print_neigh function that prints it directly in the terminal (Notice: it is default set to use 
+colors to make the visualization more clear, if your terminal doesn't support ANSI color codes you should use print_neigh(0)).

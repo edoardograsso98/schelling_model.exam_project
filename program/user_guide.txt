@@ -1,0 +1,53 @@
+This file contains a user guide to the interface of the program, for a description on how the program works check the Description.txt file as well as the comments
+inside the code itself.
+
+COMPILE THE PROGRAM AND LAUNCH THE MACRO
+To compile the code, inside a ROOT instance write: ".x compileprogram.C"
+To launch the macro I used to obtain the results I put in the report use "launch_macro();". launch_macro can also return all the histograms that are created inside
+the function, to see them you should write: "auto histos = launch_macro(1);". It returns a TH1D** object, then with "histos[i]->Draw();" for 0<=i<=13 it draws the
+desired histogram.
+
+EXPERIMENT WITH YOUR OWN NEIGHBORHOODS
+You can also experiment with neighborhoods with any combination of parameters. After compiling the code you can write "Neighborhood my_neigh(R, tol);"
+where R is the range of vision and it is an integer, 1<=R<=7, any value different from these will result in R=1 (explanation for this, as well as a definition
+of R are in the report), tol is the tolerance of the agents and it is a double, 0<=tol<=1, for any different value the program will throw an exception (Notice: 
+tol=0.5 means that an agent is happy if at most 50% of its neighbors are of different ethnicity, t>0.5 means a more tolerant behaviour towards strangers, t<0.5 means
+less tolerant). WARNING: the first instance of Neighborhood you create will take much longer run-time than the others.
+"my_neigh.print_neigh()" will allow you to vizualize the Neighborhood (Warning: if your terminal doesn't support ANSI color codes than garbage will show up, you 
+should use "my_neigh.print_neigh(0)" instead).
+"my_neigh.iterate()" will run by default 10000 steps of the simulation (you can change this by writing "my_neigh.iterate(integer)") and will return a bool value,
+if it returns false than nobody moved during these 10000 steps and therefore the system has almost surely reached stationarity (to check this you can write
+my_neigh.is_stationary()").
+Use "my_neigh.fraction_happy()" to get the fraction of happy agents and "my_neigh.get_seg_coeff()" to get S, the segregation coefficient (definition of this in
+the report).
+You can also use "auto hist = create_hist(my_neigh)" to lauch 30 different simulations with neighborhoods with the same parameters as the one you instantiated and
+create a histogram containing all the values of S, this function also takes as parameters the number of experiments (default is 30) and the maximum number of 
+calls to the iterate function before giving up (a simulation stops when the Neighborhood reaches stationarity, but it doesn't guarantee to reach it in a finite
+number of steps), it is default set to 10, that means 100000 steps.
+
+WRITE EFFICIENT CODE
+As it's well explained in the Description.txt file, this program allows you to deal with as many neighborhoods as you like at the same time but it becomes slightly
+less efficient when more than one instance of a Neighborhood is present (a run of TStopwatch showed that the recolor function requires about half the CP time of the
+iterate function). To have only one instance of Neighborhood I suggest you to use only one name at a time and use the assignment operator, like
+"Neighborhood my_neigh(5,0.5);" to create the first one, then for the second one "my_neigh = Neighborhood(3,0.5)" and so on. Also, more importantly you should
+never run the launch_macro function after having already created an instance of a Neighborhood because it will make the macro considerably slower. A run with
+these two methods on my computer gave the following results in terms of computing resources: 
+Without any other instance -> Real time: 0:04:48, CP time: 288.490
+After creating an instance -> Real time: 0:07:09, CP time: 429.640
+Another thing to take into consideration is that, since the first instance of a Neighborhood brings the burden of creating the whole Grid (as it is explained in 
+Description.txt), the first Neighborhood is by far the most costly to instanciate. This just means that you should avoid writing code that constantly destroy and 
+instanciate new neighborhoods, so don't write code like: 
+"for (int i = 0; i < 10; ++i) 
+    Neighborhood neigh;"
+or anything that makes the only instance of a Neighborhood go out of scope.
+
+BONUS: CREATE MORE ethnicities
+One of the feature of this program is that it allows the user to create as many ethnicities as they want. To do so you must use the static members on the class
+Ethnicity. The add_ethn function takes two parameters, a char that is the label of the ethnicity and a string that is a color code to visualize the ethnicity in 
+the terminal (it is default set to "0" that means white). For example you can write. "Ethnicity::add_ethn('h', "32");" to a 'h' ethnicity (hispanic) that will be
+represented as green, and "Ethnicity::remove_ethn('h');" to remove the ethnicity labeled 'h'. Once you created a new ethnicity every Neighborhood that you create
+from that moment onward will have agents of that ethnicity too (with the same proportions as the others). You can make this neighborhoods evolve like the others and
+all the functionalities work perfectly well with any number of ethnicities.
+
+WARNING
+The user should never try accessing or modify any variable nor call any function contained inside the Grid namespace.
